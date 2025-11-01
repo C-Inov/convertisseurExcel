@@ -1,0 +1,23 @@
+# --- GENERAL ---
+node_modules/
+.DS_Store
+*.log
+
+# --- REACT FRONTEND ---
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.env
+
+# --- PYTHON BACKEND ---
+Backend/__pycache__/
+Backend/.env
+Backend/venv/
+
+# --- GENERATED FILES (Excel uploads / processed) ---
+Backend/uploads/
+Backend/processed/
+
+# --- PYTHON CACHE & MISC ---
+*.pyc
+*.pyo
+*.pyd
