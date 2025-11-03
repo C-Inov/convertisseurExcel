@@ -23,9 +23,10 @@ export interface ProcessedRecord {
   sheet_name: string;
   nom: string;
   prenom: string;
-  numero: string;
+  seudo: string;
   email: string;
   mot_de_passe?: string;
+  classe: string;
   created_at?: string;
 }
 

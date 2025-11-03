@@ -407,7 +407,7 @@ const ExcelProcessorApp: React.FC = () => {
                   <ul className="text-sm text-blue-800 space-y-1">
                     <li>
                       • Colonnes obligatoires : <strong>nom</strong>,{" "}
-                      <strong>prenom</strong>, <strong>numero</strong>
+                      <strong>prenom</strong>, <strong>classe</strong>
                     </li>
                     <li>
                       • Le système génèrera automatiquement :{" "}
@@ -570,13 +570,16 @@ const ExcelProcessorApp: React.FC = () => {
                                 Prénom
                               </th>
                               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                                Numéro
+                                cedo
                               </th>
                               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                                 Email
                               </th>
                               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                                 Mot de passe
+                              </th>
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                class
                               </th>
                             </tr>
                           </thead>
@@ -617,13 +620,16 @@ const ExcelProcessorApp: React.FC = () => {
                                       {row.prenom}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-gray-800">
-                                      {row.numero}
+                                      {row.seudo}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-blue-600">
                                       {row.email}
                                     </td>
                                     <td className="px-4 py-3 text-sm font-mono text-gray-600">
                                       {row.mot_de_passe}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-mono text-gray-600">
+                                      {row.classe}
                                     </td>
                                   </tr>
                                 ));
@@ -914,8 +920,14 @@ const ExcelProcessorApp: React.FC = () => {
 
       {/* Modal d'upload */}
       {showUploadModal && (
-        <div onClick={() => setShowUploadModal(false)} className="fixed inset-0 bg-black/75 bg-opacity-10 flex items-center justify-center z-50 p-4">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+        <div
+          onClick={() => setShowUploadModal(false)}
+          className="fixed inset-0 bg-black/75 bg-opacity-10 flex items-center justify-center z-50 p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6"
+          >
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               Nom du fichier à traiter
             </h3>
@@ -967,8 +979,14 @@ const ExcelProcessorApp: React.FC = () => {
 
       {/* Modal de choix de format */}
       {showFormatModal && (
-        <div onClick={ ()=> setShowFormatModal(false) } className="fixed inset-0 bg-black/75 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-lg shadow-2xl max-w-2xl w-full p-6">
+        <div
+          onClick={() => setShowFormatModal(false)}
+          className="fixed inset-0 bg-black/75 bg-opacity-50 flex items-center justify-center z-50 p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full p-6"
+          >
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
               Choisir le format de téléchargement
             </h3>
@@ -1057,8 +1075,14 @@ const ExcelProcessorApp: React.FC = () => {
 
       {/* Modal d'options CSV */}
       {showCsvOptionsModal && (
-        <div onClick={() => setShowCsvOptionsModal(false)} className="fixed inset-0 bg-black/75 bg-opacity-50 flex items-center justify-center">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <div
+          onClick={() => setShowCsvOptionsModal(false)}
+          className="fixed inset-0 bg-black/75 bg-opacity-50 flex items-center justify-center"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
+          >
             <h2 className="text-xl font-bold mb-4">Options CSV</h2>
 
             <select

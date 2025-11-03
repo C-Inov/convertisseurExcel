@@ -110,7 +110,7 @@ def init_database():
                 file_id VARCHAR(100) NOT NULL,
                 nom VARCHAR(100) NOT NULL,
                 prenom VARCHAR(100) NOT NULL,
-                numero VARCHAR(50) NOT NULL,
+                classe VARCHAR(50) NOT NULL,
                 email VARCHAR(255) NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -188,6 +188,24 @@ def generate_email(prenom, nom):
 
     return f"{prenom_clean}.{nom_clean}@entreprise.com"
 
+def generate_pseudonyme(nom, prenom, classe):
+    """Génère un pseudonyme basé sur nom, prenom et classe."""
+    
+    nom_clean = re.sub(r"[^a-zA-Z]", "", nom.lower())
+    prenom_clean = re.sub(r"[^a-zA-Z]", "", prenom.lower())
+    classe_clean = str(classe).replace(" ", "").lower()
+
+    # 2 premières lettres du nom
+    part_nom = nom_clean[:2]
+
+    # 3 premières lettres du prenom
+    part_prenom = prenom_clean[:3]
+
+    # exemple final
+    pseudo = f"{part_nom}{part_prenom}{classe_clean}"
+
+    return pseudo
+
 
 def generate_strong_password(length=12):
     """Génère un mot de passe fort avec majuscules, minuscules, chiffres et symboles"""
@@ -215,17 +233,10 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def validate_phone_number(numero):
-    """Valide le format d'un numéro de téléphone"""
-    numero_clean = re.sub(r"\s+", "", str(numero))
-    pattern = r"^\+?[0-9]{8,15}$"
-    return re.match(pattern, numero_clean) is not None
-
-
 def validate_excel_data(df):
     """Valide les données du fichier Excel"""
     errors = []
-    required_columns = ["nom", "prenom", "numero"]
+    required_columns = ["nom", "prenom", "classe"]
 
     # Vérifier les colonnes requises
     df_columns = [col.lower() for col in df.columns]
@@ -252,19 +263,8 @@ def validate_excel_data(df):
         if pd.isna(row["prenom"]) or str(row["prenom"]).strip() == "":
             errors.append(f"Ligne {row_num}: Prénom manquant")
 
-        if pd.isna(row["numero"]) or str(row["numero"]).strip() == "":
-            errors.append(f"Ligne {row_num}: Numéro manquant")
-        else:
-            numero = str(row["numero"]).strip()
-
-            # Vérifier les doublons
-            if numero in numeros_seen:
-                errors.append(f"Ligne {row_num}: Numéro en double ({numero})")
-            numeros_seen.add(numero)
-
-            # Vérifier le format
-            if not validate_phone_number(numero):
-                errors.append(f"Ligne {row_num}: Format de numéro invalide ({numero})")
+        if pd.isna(row["classe"]) or str(row["classe"]).strip() == "":
+            errors.append(f"Ligne {row_num}: classe manquant")
 
         # Vérifier les emails potentiellement en double
         if not pd.isna(row["nom"]) and not pd.isna(row["prenom"]):
@@ -590,6 +590,7 @@ def upload_file():
             # Traiter les données de cette feuille
             for _, row in df.iterrows():
                 email = generate_email(str(row["prenom"]), str(row["nom"]))
+                seudo = generate_pseudonyme(str(row["nom"]), str(row["prenom"]), str(row["classe"]))
                 password = generate_strong_password()
                 password_hash = hash_password(password)
 
@@ -597,9 +598,10 @@ def upload_file():
                     "sheet_name": sheet_name,
                     "nom": str(row["nom"]).strip(),
                     "prenom": str(row["prenom"]).strip(),
-                    "numero": str(row["numero"]).strip(),
+                    "seudo": seudo,
                     "email": email,
                     "mot_de_passe": password,
+                    "classe": str(row["classe"]).strip(),
                 }
 
                 all_sheets_data.append(processed_record)
@@ -611,16 +613,17 @@ def upload_file():
                     cursor.execute(
                         """
                         INSERT INTO processed_records 
-                        (file_id, nom, prenom, numero, email, password_hash)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        (file_id, nom, prenom, seudo, email, password_hash, classe)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
                         (
                             file_id,
                             processed_record["nom"],
                             processed_record["prenom"],
-                            processed_record["numero"],
+                            processed_record["seudo"],
                             processed_record["email"],
                             password_hash,
+                            processed_record["classe"],
                         ),
                     )
                     connection.commit()
@@ -679,7 +682,7 @@ def upload_file():
             ws = wb.create_sheet(title=sheet_name)
 
             # En-têtes avec style
-            headers = ["Nom", "Prénom", "Numéro", "Email", "Mot de passe"]
+            headers = ["Nom", "Prénom", "classe", "Email", "Mot de passe"]
             for col_num, header in enumerate(headers, 1):
                 cell = ws.cell(row=1, column=col_num, value=header)
                 cell.font = Font(bold=True, color="FFFFFF")
@@ -692,7 +695,7 @@ def upload_file():
             for row_num, record in enumerate(records, 2):
                 ws.cell(row=row_num, column=1, value=record["nom"])
                 ws.cell(row=row_num, column=2, value=record["prenom"])
-                ws.cell(row=row_num, column=3, value=record["numero"])
+                ws.cell(row=row_num, column=3, value=record["classe"])
                 ws.cell(row=row_num, column=4, value=record["email"])
                 ws.cell(row=row_num, column=5, value=record["mot_de_passe"])
 
@@ -1178,7 +1181,7 @@ def get_file_details(file_id):
             # Récupérer les enregistrements traités
             cursor.execute(
                 """
-                SELECT nom, prenom, numero, email, created_at
+                SELECT nom, prenom, classe, email, created_at
                 FROM processed_records
                 WHERE file_id = %s
             """,
