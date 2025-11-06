@@ -1,7 +1,7 @@
 // src/services/authService.ts
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/auth"; // adapte selon ton backend
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"; // adapte selon ton backend
 
 export interface AuthResponse {
   token: string;

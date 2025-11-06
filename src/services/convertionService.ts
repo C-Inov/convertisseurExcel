@@ -1,6 +1,6 @@
-
 // Configuration de l'API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Types pour les réponses de l'API
 export interface ApiResponse<T> {
@@ -20,10 +20,10 @@ export interface FileUploadResponse {
 }
 
 export interface ProcessedRecord {
-  sheet_name: string;
+  sheet_names: string;
   nom: string;
-  prenom: string;
-  seudo: string;
+  prenoms: string;
+  pseudo: string;
   email: string;
   mot_de_passe?: string;
   classe: string;
@@ -35,7 +35,7 @@ export interface FileHistoryRecord {
   original_filename: string;
   processed_filename: string | null;
   upload_date: string;
-  status: 'pending' | 'processing' | 'success' | 'error';
+  status: "pending" | "processing" | "success" | "error";
   record_count: number;
   error_message: string | null;
 }
@@ -70,9 +70,13 @@ export class ApiError extends Error {
   statusCode?: number;
   details?: string | string[];
 
-  constructor(message: string, statusCode?: number, details?: string | string[]) {
+  constructor(
+    message: string,
+    statusCode?: number,
+    details?: string | string[]
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.statusCode = statusCode;
     this.details = details;
   }
@@ -114,9 +118,9 @@ class ExcelProcessorApiService {
   async healthCheck(): Promise<HealthCheckResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/health`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -125,7 +129,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Impossible de se connecter au serveur', undefined, String(error));
+      throw new ApiError(
+        "Impossible de se connecter au serveur",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -139,17 +147,17 @@ class ExcelProcessorApiService {
   ): Promise<FileUploadResponse> {
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      
+      formData.append("file", file);
+
       if (customFileName) {
-        formData.append('custom_filename', customFileName);
+        formData.append("custom_filename", customFileName);
       }
 
       const xhr = new XMLHttpRequest();
 
       return new Promise((resolve, reject) => {
         if (onProgress) {
-          xhr.upload.addEventListener('progress', (event) => {
+          xhr.upload.addEventListener("progress", (event) => {
             if (event.lengthComputable) {
               const progress = (event.loaded / event.total) * 100;
               onProgress(progress);
@@ -157,13 +165,19 @@ class ExcelProcessorApiService {
           });
         }
 
-        xhr.addEventListener('load', async () => {
+        xhr.addEventListener("load", async () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const data = JSON.parse(xhr.responseText);
+              console.log("📊 Réponse complète de l'upload:", data);
+              console.log("📋 Feuilles reçues:", data.sheet_names);
+              console.log("🔢 Nombre de feuilles:", data.sheets_processed);
+              console.log("📝 Données reçues:", data.data);
               resolve(data);
             } catch (error) {
-              reject(new ApiError('Erreur lors du parsing de la réponse', xhr.status));
+              reject(
+                new ApiError("Erreur lors du parsing de la réponse", xhr.status)
+              );
             }
           } else {
             try {
@@ -181,15 +195,15 @@ class ExcelProcessorApiService {
           }
         });
 
-        xhr.addEventListener('error', () => {
-          reject(new ApiError('Erreur réseau lors de l\'upload'));
+        xhr.addEventListener("error", () => {
+          reject(new ApiError("Erreur réseau lors de l'upload"));
         });
 
-        xhr.addEventListener('timeout', () => {
-          reject(new ApiError('Le délai d\'attente de la requête a expiré'));
+        xhr.addEventListener("timeout", () => {
+          reject(new ApiError("Le délai d'attente de la requête a expiré"));
         });
 
-        xhr.open('POST', `${this.baseUrl}/upload`);
+        xhr.open("POST", `${this.baseUrl}/upload`);
         xhr.timeout = 120000;
         xhr.send(formData);
       });
@@ -197,7 +211,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors de l\'upload du fichier', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors de l'upload du fichier",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -207,7 +225,7 @@ class ExcelProcessorApiService {
   async downloadProcessedFile(fileId: string): Promise<Blob> {
     try {
       const response = await fetch(`${this.baseUrl}/download/${fileId}`, {
-        method: 'GET',
+        method: "GET",
       });
 
       if (!response.ok) {
@@ -226,7 +244,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors du téléchargement', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors du téléchargement",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -234,26 +256,30 @@ class ExcelProcessorApiService {
    * Télécharge un fichier traité et déclenche le téléchargement dans le navigateur
    */
   async downloadProcessedFileAndSave(
-    fileId: string, 
+    fileId: string,
     filename?: string
   ): Promise<void> {
     try {
       const blob = await this.downloadProcessedFile(fileId);
-      
+
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename || `processed_${fileId}.xlsx`;
       document.body.appendChild(link);
       link.click();
-      
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors du téléchargement', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors du téléchargement",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -263,9 +289,9 @@ class ExcelProcessorApiService {
   async getHistory(): Promise<FileHistoryRecord[]> {
     try {
       const response = await fetch(`${this.baseUrl}/history`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -275,7 +301,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors de la récupération de l\'historique', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors de la récupération de l'historique",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -285,9 +315,9 @@ class ExcelProcessorApiService {
   async getFileDetails(fileId: string): Promise<FileDetailsResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/file/${fileId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -296,7 +326,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors de la récupération des détails', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors de la récupération des détails",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -306,9 +340,9 @@ class ExcelProcessorApiService {
   async deleteFile(fileId: string): Promise<{ message: string }> {
     try {
       const response = await fetch(`${this.baseUrl}/file/${fileId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -317,7 +351,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors de la suppression', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors de la suppression",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -339,9 +377,9 @@ class ExcelProcessorApiService {
   async getExportFormats(): Promise<ExportFormat[]> {
     try {
       const response = await fetch(`${this.baseUrl}/export-formats`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -351,7 +389,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors de la récupération des formats', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors de la récupération des formats",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -361,19 +403,26 @@ class ExcelProcessorApiService {
   async getFileSheets(fileId: string): Promise<string[]> {
     try {
       const response = await fetch(`${this.baseUrl}/file/${fileId}/sheets`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-      const data = await this.handleResponse<{ sheets: string[]; count: number }>(response);
+      const data = await this.handleResponse<{
+        sheets: string[];
+        count: number;
+      }>(response);
       return data.sheets;
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors de la récupération des feuilles', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors de la récupération des feuilles",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -381,21 +430,21 @@ class ExcelProcessorApiService {
    * Télécharge un fichier traité dans un format spécifique
    */
   async downloadProcessedFileWithFormat(
-    fileId: string, 
-    format: string, 
+    fileId: string,
+    format: string,
     csvOptions?: { sheet?: string; combine?: boolean }
   ): Promise<Blob> {
     try {
       let url = `${this.baseUrl}/download/${fileId}/${format}`;
-      
+
       // Ajouter les paramètres CSV si nécessaire
-      if (format === 'csv' && csvOptions) {
+      if (format === "csv" && csvOptions) {
         const params = new URLSearchParams();
         if (csvOptions.sheet) {
-          params.append('sheet', csvOptions.sheet);
+          params.append("sheet", csvOptions.sheet);
         }
         if (csvOptions.combine) {
-          params.append('combine', 'true');
+          params.append("combine", "true");
         }
         if (params.toString()) {
           url += `?${params.toString()}`;
@@ -403,7 +452,7 @@ class ExcelProcessorApiService {
       }
 
       const response = await fetch(url, {
-        method: 'GET',
+        method: "GET",
       });
 
       if (!response.ok) {
@@ -422,7 +471,11 @@ class ExcelProcessorApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors du téléchargement', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors du téléchargement",
+        undefined,
+        String(error)
+      );
     }
   }
 
@@ -436,37 +489,45 @@ class ExcelProcessorApiService {
     csvOptions?: { sheet?: string; combine?: boolean }
   ): Promise<void> {
     try {
-      const blob = await this.downloadProcessedFileWithFormat(fileId, format, csvOptions);
-      
+      const blob = await this.downloadProcessedFileWithFormat(
+        fileId,
+        format,
+        csvOptions
+      );
+
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      
+
       if (filename) {
-        let baseName = filename.replace(/\.[^/.]+$/, '');
-        
+        let baseName = filename.replace(/\.[^/.]+$/, "");
+
         // Si une feuille spécifique est sélectionnée pour CSV, ajouter son nom
-        if (format === 'csv' && csvOptions?.sheet) {
+        if (format === "csv" && csvOptions?.sheet) {
           baseName += `_${csvOptions.sheet}`;
-        } else if (format === 'csv' && csvOptions?.combine) {
-          baseName += '_combined';
+        } else if (format === "csv" && csvOptions?.combine) {
+          baseName += "_combined";
         }
-        
+
         link.download = `${baseName}.${format}`;
       } else {
         link.download = `processed_${fileId}.${format}`;
       }
-      
+
       document.body.appendChild(link);
       link.click();
-      
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError('Erreur lors du téléchargement', undefined, String(error));
+      throw new ApiError(
+        "Erreur lors du téléchargement",
+        undefined,
+        String(error)
+      );
     }
   }
 }
