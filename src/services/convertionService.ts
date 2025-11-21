@@ -20,14 +20,15 @@ export interface FileUploadResponse {
 }
 
 export interface ProcessedRecord {
-  sheet_names: string;
+  sheet_name: string;
   nom: string;
   prenoms: string;
   pseudo: string;
   email: string;
-  mot_de_passe?: string;
+  mot_de_passe: string;
   classe: string;
-  created_at?: string;
+  student: string; // Nouveau champ
+  cohorte: string; // Nouveau champ
 }
 
 export interface FileHistoryRecord {
@@ -169,10 +170,6 @@ class ExcelProcessorApiService {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const data = JSON.parse(xhr.responseText);
-              console.log("📊 Réponse complète de l'upload:", data);
-              console.log("📋 Feuilles reçues:", data.sheet_names);
-              console.log("🔢 Nombre de feuilles:", data.sheets_processed);
-              console.log("📝 Données reçues:", data.data);
               resolve(data);
             } catch (error) {
               reject(
@@ -206,6 +203,7 @@ class ExcelProcessorApiService {
         xhr.open("POST", `${this.baseUrl}/upload`);
         xhr.timeout = 120000;
         xhr.send(formData);
+        console.log("Upload started", { formData });
       });
     } catch (error) {
       if (error instanceof ApiError) {
@@ -339,7 +337,7 @@ class ExcelProcessorApiService {
    */
   async deleteFile(fileId: string): Promise<{ message: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/file/${fileId}`, {
+      const response = await fetch(`${this.baseUrl}/file/${fileId}/fe`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
